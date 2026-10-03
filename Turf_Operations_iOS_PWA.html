@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Turf & Irrigation Log - 19 Hole PWA</title>
+
+    <!-- iOS Standalone Web App Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Turf Log">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#0f172a">
+
+    <!-- Inline Web App Manifest via Data URI -->
+    <link rel="manifest" href="data:application/json;charset=utf-8,%7B%22name%22%3A%22Turf%20%26%20Irrigation%20Tracker%22%2C%22short_name%22%3A%22TurfLog%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230f172a%22%2C%22theme_color%22%3A%22%230f172a%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fcdn-icons-png.flaticon.com%2F512%2F620%2F620851.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D">
+
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/620/620851.png">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --sat: env(safe-area-inset-top);
+            --sab: env(safe-area-inset-bottom);
+        }
+
+        body {
+            background-color: #0f172a; /* Slate 900 */
+            color: #f8fafc;
+            padding-top: max(0px, var(--sat));
+            padding-bottom: max(16px, var(--sab));
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        .font-mono-num {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        /* High-Contrast Cards for Daylight Usability */
+        .ag-card {
+            background: #1e293b; /* Slate 800 */
+            border: 1.5px solid #334155;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: all 0.2s ease-in-out;
+        }
+
+        .ag-card-completed {
+            background: #064e3b; /* Deep Emerald */
+            border: 2px solid #10b981; /* Emerald 500 */
+            box-shadow: 0 0 16px rgba(16, 185, 129, 0.2);
+        }
+
+        .ag-card-19 {
+            border-color: #f59e0b;
+        }
+        .ag-card-19.ag-card-completed {
+            background: #451a03;
+            border-color: #f59e0b;
+        }
+
+        /* Input Styles preventing Mobile iOS Zoom */
+        input[type="number"], textarea {
+            font-size: 16px !important;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 9999px;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; color: black !important; padding: 0 !important; }
+            .ag-card { background: white !important; border: 1px solid #ccc !important; color: black !important; break-inside: avoid; }
+            .ag-card-completed { background: #ecfdf5 !important; border: 2px solid #10b981 !important; }
+            input, textarea { border: 1px solid #ccc !important; background: transparent !important; color: black !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between selection:bg-emerald-500 selection:text-white">
+
+    <!-- Top Fixed Navigation -->
+    <header class="sticky top-0 z-30 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 py-3 shadow-lg no-print">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-3">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white shadow-lg shadow-emerald-950/60 font-black text-xl shrink-0">
+                    <i class="fa-solid fa-droplet-degree text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="text-base md:text-lg font-black tracking-tight text-slate-100 flex items-center gap-2">
+                        Turf Operations <span class="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">PWA Offline</span>
+                    </h1>
+                    <p class="text-xs text-slate-400 font-medium">19-Hole Agronomy & VWC Log</p>
+                </div>
+            </div>
+
+            <!-- Top Actions -->
+            <div class="flex items-center gap-2">
+                <button onclick="openInstallModal()" class="bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 text-xs px-3 py-2 rounded-xl font-bold transition flex items-center gap-1.5 active:scale-95">
+                    <i class="fa-solid fa-mobile-screen-button text-amber-400"></i>
+                    <span class="hidden sm:inline">Install App</span>
+                </button>
+                <button onclick="exportCSV()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs px-3 py-2 rounded-xl font-semibold transition flex items-center gap-1.5 active:scale-95">
+                    <i class="fa-solid fa-file-csv text-emerald-400"></i> CSV
+                </button>
+                <button onclick="openResetModal()" class="bg-red-950/50 hover:bg-red-900/80 border border-red-800/60 text-red-300 text-xs px-3 py-2 rounded-xl font-semibold transition flex items-center gap-1.5 active:scale-95">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- PWA iOS Installation Prompt Banner (Dismissable) -->
+    <div id="iosInstallBanner" class="bg-slate-800/90 border-b border-slate-700 px-4 py-2.5 no-print">
+        <div class="max-w-7xl mx-auto flex items-center justify-between text-xs text-slate-300 gap-2">
+            <div class="flex items-center gap-2">
+                <i class="fa-brands fa-apple text-emerald-400 text-sm"></i>
+                <span>Save to iPhone: Tap <strong>Share <i class="fa-solid fa-share-from-square"></i></strong> $\rightarrow$ <strong>Add to Home Screen</strong> for full-screen offline app.</span>
+            </div>
+            <button onclick="dismissBanner()" class="text-slate-400 hover:text-white p-1">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <main class="max-w-7xl mx-auto w-full px-4 py-5 space-y-5 flex-grow">
+
+        <!-- Progress & Filter Dashboard -->
+        <section class="ag-card rounded-2xl p-4 md:p-5">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3">
+                
+                <!-- Completion Counters -->
+                <div>
+                    <div class="text-[11px] font-extrabold text-emerald-400 tracking-wider uppercase mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-check"></i> Field Completion Status
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-3xl font-black text-white font-mono-num" id="completionText">0 / 19</span>
+                        <span class="text-sm font-bold text-emerald-400" id="completionPercentage">(0%)</span>
+                    </div>
+                </div>
+
+                <!-- Global Toggle Buttons -->
+                <div class="flex flex-wrap items-center gap-2 no-print">
+                    <button onclick="toggleCheckAll(true)" class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs px-3.5 py-2.5 rounded-xl font-bold transition shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-check-double"></i> Check All
+                    </button>
+                    <button onclick="toggleCheckAll(false)" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 active:scale-95 text-slate-300 text-xs px-3.5 py-2.5 rounded-xl font-bold transition shadow flex items-center gap-1.5">
+                        <i class="fa-solid fa-xmark"></i> Uncheck All
+                    </button>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-900 h-3.5 rounded-full overflow-hidden p-0.5 border border-slate-700">
+                <div id="progressBar" class="bg-emerald-500 h-full rounded-full transition-all duration-300 ease-out w-0"></div>
+            </div>
+
+            <!-- Interactive Filters -->
+            <div class="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-slate-700/60 no-print">
+                <div class="flex items-center gap-1.5 text-xs font-semibold">
+                    <span class="text-slate-400 mr-1">Filter:</span>
+                    <button onclick="setFilter('all')" id="filterAll" class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white shadow">All (19)</button>
+                    <button onclick="setFilter('unchecked')" id="filterUnchecked" class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700">Unchecked</button>
+                    <button onclick="setFilter('checked')" id="filterChecked" class="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700">Checked</button>
+                </div>
+
+                <!-- Date Indicator -->
+                <div class="text-xs text-slate-400 font-mono-num" id="currentDateBadge">
+                    <!-- Javascript populates date -->
+                </div>
+            </div>
+        </section>
+
+        <!-- 19 Holes Grid -->
+        <section id="holesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            <!-- JavaScript dynamically populates 19 hole cards -->
+        </section>
+
+    </main>
+
+    <!-- iOS App Setup Modal -->
+    <div id="installModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-200">
+        <div class="ag-card rounded-2xl max-w-md w-full p-6 border border-slate-700 shadow-2xl relative">
+            <button onclick="closeInstallModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white p-2">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div class="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center text-xl font-bold mb-4 shadow-lg shadow-emerald-950/60">
+                <i class="fa-brands fa-apple"></i>
+            </div>
+            <h3 class="text-lg font-bold text-white mb-2">Install as iOS App on iPhone</h3>
+            <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                You can save this application directly to your iPhone's home screen so it runs full-screen, without Safari browser bars, completely offline on the golf course.
+            </p>
+            <ol class="space-y-3 text-xs text-slate-200 mb-6 font-medium">
+                <li class="flex items-start gap-2.5 bg-slate-900/80 p-2.5 rounded-xl border border-slate-700">
+                    <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center font-bold text-[11px] shrink-0">1</span>
+                    <span>Tap the <strong>Safari Share button <i class="fa-solid fa-share-from-square text-sky-400"></i></strong> at the bottom of the screen.</span>
+                </li>
+                <li class="flex items-start gap-2.5 bg-slate-900/80 p-2.5 rounded-xl border border-slate-700">
+                    <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center font-bold text-[11px] shrink-0">2</span>
+                    <span>Scroll down the menu and select <strong>Add to Home Screen <i class="fa-regular fa-square-plus text-emerald-400"></i></strong>.</span>
+                </li>
+                <li class="flex items-start gap-2.5 bg-slate-900/80 p-2.5 rounded-xl border border-slate-700">
+                    <span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center font-bold text-[11px] shrink-0">3</span>
+                    <span>Tap <strong>Add</strong> in the top-right corner. Launch the app from your iPhone Home Screen!</span>
+                </li>
+            </ol>
+            <button onclick="closeInstallModal()" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition shadow-lg">
+                Got It
+            </button>
+        </div>
+    </div>
+
+    <!-- Reset Confirmation Modal -->
+    <div id="resetModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-200">
+        <div class="ag-card rounded-2xl max-w-sm w-full p-6 border border-slate-700 shadow-2xl text-center">
+            <div class="w-12 h-12 rounded-full bg-red-950 border border-red-700 text-red-400 flex items-center justify-center text-xl mx-auto mb-3">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="text-base font-bold text-white mb-1">Reset All Hole Logs?</h3>
+            <p class="text-xs text-slate-300 mb-6 leading-relaxed">
+                This will uncheck all 19 holes, clear all moisture readings, and delete all notes for today's log.
+            </p>
+            <div class="flex gap-3">
+                <button onclick="closeResetModal()" class="flex-1 py-2.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs">
+                    Cancel
+                </button>
+                <button onclick="confirmReset()" class="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-lg shadow-red-950/50">
+                    Yes, Reset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const TOTAL_HOLES = 19;
+        let holesData = [];
+        let activeFilter = 'all';
+
+        // Load Application State from LocalStorage
+        function loadData() {
+            const saved = localStorage.getItem('turf_pwa_ios_data_v1');
+            if (saved) {
+                try {
+                    holesData = JSON.parse(saved);
+                } catch(e) {
+                    initDefaultData();
+                }
+            } else {
+                initDefaultData();
+            }
+            renderDateBadge();
+            renderHoles();
+            updateDashboard();
+        }
+
+        function initDefaultData() {
+            holesData = [];
+            for (let i = 1; i <= TOTAL_HOLES; i++) {
+                const is19 = (i === 19);
+                holesData.push({
+                    id: i,
+                    completed: false,
+                    is19: is19,
+                    title: is19 ? 'Hole 19 (Practice/Nursery)' : `Hole ${i}`,
+                    lowVWC: '',
+                    avgVWC: '',
+                    notes: ''
+                });
+            }
+            saveData();
+        }
+
+        function saveData() {
+            localStorage.setItem('turf_pwa_ios_data_v1', JSON.stringify(holesData));
+            updateDashboard();
+        }
+
+        function renderDateBadge() {
+            const today = new Date();
+            const formatted = today.toLocaleDateString('en-US', {
+                weekday: 'short', month: 'short', day: 'numeric'
+            });
+            document.getElementById('currentDateBadge').innerHTML = `<i class="fa-regular fa-calendar-days text-emerald-400 mr-1"></i>${formatted}`;
+        }
+
+        // Render Holes Grid
+        function renderHoles() {
+            const container = document.getElementById('holesGrid');
+            container.innerHTML = '';
+
+            holesData.forEach((hole, index) => {
+                // Apply Active Filter
+                if (activeFilter === 'checked' && !hole.completed) return;
+                if (activeFilter === 'unchecked' && hole.completed) return;
+
+                const card = document.createElement('div');
+                card.className = `ag-card rounded-2xl p-4 flex flex-col justify-between ${
+                    hole.completed ? 'ag-card-completed' : ''
+                } ${hole.is19 ? 'ag-card-19' : ''}`;
+
+                // VWC Moisture Category Status Badge
+                const statusBadge = getMoistureBadge(hole.avgVWC);
+
+                card.innerHTML = `
+                    <div>
+                        <!-- Header & Checkbox Toggle -->
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-700/60 gap-2">
+                            <div class="flex items-center gap-2.5">
+                                <span class="w-8 h-8 rounded-xl ${
+                                    hole.completed 
+                                        ? 'bg-emerald-400 text-slate-950 font-black' 
+                                        : (hole.is19 ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40' : 'bg-slate-900 text-slate-200 border border-slate-700')
+                                } flex items-center justify-center font-mono-num font-bold text-sm">
+                                    ${hole.is19 ? '19' : hole.id}
+                                </span>
+                                <div>
+                                    <h2 class="font-extrabold text-sm ${hole.completed ? 'text-white' : (hole.is19 ? 'text-amber-300' : 'text-slate-100')}">
+                                        ${hole.is19 ? 'Hole 19 (Practice Green)' : `Hole ${hole.id}`}
+                                    </h2>
+                                    ${statusBadge}
+                                </div>
+                            </div>
+
+                            <!-- Single-Tap Big Touch Button -->
+                            <button onclick="toggleHole(${index})" 
+                                    class="px-3.5 py-2 rounded-xl font-bold text-xs transition flex items-center gap-1.5 active:scale-90 ${
+                                        hole.completed 
+                                            ? 'bg-emerald-400 text-slate-950 shadow-lg shadow-emerald-400/20 font-black' 
+                                            : 'bg-slate-900 border border-slate-700 text-slate-400 hover:text-white'
+                                    }">
+                                <i class="fa-solid ${hole.completed ? 'fa-square-check text-sm' : 'fa-square text-sm'}"></i>
+                                <span>${hole.completed ? 'Done' : 'Check'}</span>
+                            </button>
+                        </div>
+
+                        <!-- Volumetric Water Content (VWC %) Inputs -->
+                        <div class="mt-3.5 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="text-[10px] font-extrabold uppercase text-slate-400 tracking-wider flex items-center gap-1">
+                                    <i class="fa-solid fa-droplet text-sky-400"></i> Moisture (VWC %)
+                                </label>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="bg-slate-900/90 border border-slate-700 rounded-xl p-2 focus-within:border-sky-500 transition">
+                                    <span class="block text-[9px] text-slate-400 font-bold uppercase">Low %</span>
+                                    <input type="number" step="0.1" min="0" max="100" placeholder="0.0"
+                                           value="${hole.lowVWC}"
+                                           oninput="updateInput(${index}, 'lowVWC', this.value)"
+                                           class="w-full bg-transparent text-sm font-bold font-mono-num text-sky-300 placeholder-slate-600 focus:outline-none mt-0.5">
+                                </div>
+                                <div class="bg-slate-900/90 border border-slate-700 rounded-xl p-2 focus-within:border-emerald-500 transition">
+                                    <span class="block text-[9px] text-slate-400 font-bold uppercase">Average %</span>
+                                    <input type="number" step="0.1" min="0" max="100" placeholder="0.0"
+                                           value="${hole.avgVWC}"
+                                           oninput="updateInput(${index}, 'avgVWC', this.value)"
+                                           class="w-full bg-transparent text-sm font-bold font-mono-num text-emerald-300 placeholder-slate-600 focus:outline-none mt-0.5">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Expanded Work Notes / Observation Input -->
+                        <div class="mt-3">
+                            <label class="block text-[10px] font-extrabold uppercase text-slate-400 tracking-wider mb-1">
+                                <i class="fa-solid fa-pen-to-square text-emerald-400 mr-1"></i> Field Observation / Notes
+                            </label>
+                            <textarea rows="2" placeholder="e.g. Syringed front collar, sprinkler head adjusted..."
+                                      oninput="updateInput(${index}, 'notes', this.value)"
+                                      class="w-full bg-slate-900/90 border border-slate-700 rounded-xl p-2 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500 transition">${hole.notes}</textarea>
+                        </div>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        // Calculate VWC Moisture Status Badges
+        function getMoistureBadge(avgVal) {
+            if (!avgVal || isNaN(avgVal)) {
+                return `<span class="text-[10px] text-slate-500 font-medium">No VWC entered</span>`;
+            }
+            const val = parseFloat(avgVal);
+            if (val < 12) {
+                return `<span class="inline-flex items-center gap-1 text-[10px] font-bold text-red-400 bg-red-950/80 px-1.5 py-0.5 rounded border border-red-800"><i class="fa-solid fa-fire-flame-curved"></i> Dry (${val}%)</span>`;
+            } else if (val >= 12 && val <= 22) {
+                return `<span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800"><i class="fa-solid fa-circle-check"></i> Target (${val}%)</span>`;
+            } else {
+                return `<span class="inline-flex items-center gap-1 text-[10px] font-bold text-sky-400 bg-sky-950/80 px-1.5 py-0.5 rounded border border-sky-800"><i class="fa-solid fa-water"></i> Wet (${val}%)</span>`;
+            }
+        }
+
+        // State Mutations
+        function toggleHole(index) {
+            holesData[index].completed = !holesData[index].completed;
+            saveData();
+            renderHoles();
+        }
+
+        function updateInput(index, field, value) {
+            holesData[index][field] = value;
+            saveData();
+            if (field === 'avgVWC') renderHoles(); // refresh badge state
+        }
+
+        function toggleCheckAll(status) {
+            holesData.forEach(h => h.completed = status);
+            saveData();
+            renderHoles();
+        }
+
+        function updateDashboard() {
+            const checkedCount = holesData.filter(h => h.completed).length;
+            const pct = Math.round((checkedCount / TOTAL_HOLES) * 100);
+
+            document.getElementById('completionText').innerText = `${checkedCount} / ${TOTAL_HOLES}`;
+            document.getElementById('completionPercentage').innerText = `(${pct}%)`;
+            document.getElementById('progressBar').style.width = `${pct}%`;
+        }
+
+        // Filter Controls
+        function setFilter(filter) {
+            activeFilter = filter;
+            ['all', 'unchecked', 'checked'].forEach(f => {
+                const btn = document.getElementById(`filter${f.charAt(0).toUpperCase() + f.slice(1)}`);
+                if (f === filter) {
+                    btn.className = "px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold shadow";
+                } else {
+                    btn.className = "px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 font-semibold";
+                }
+            });
+            renderHoles();
+        }
+
+        // CSV Export
+        function exportCSV() {
+            let csv = "Hole,Status,Low VWC %,Avg VWC %,Notes\n";
+            holesData.forEach(h => {
+                const status = h.completed ? "COMPLETED" : "PENDING";
+                const low = h.lowVWC ? `"${h.lowVWC}"` : "";
+                const avg = h.avgVWC ? `"${h.avgVWC}"` : "";
+                const notes = h.notes ? `"${h.notes.replace(/"/g, '""')}"` : "";
+                csv += `"${h.title}",${status},${low},${avg},${notes}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `Turf_Log_${new Date().toISOString().split('T')[0]}.csv`);
+            a.click();
+        }
+
+        // Modal Controls
+        function openInstallModal() {
+            const modal = document.getElementById('installModal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+        }
+        function closeInstallModal() {
+            const modal = document.getElementById('installModal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+        function dismissBanner() {
+            document.getElementById('iosInstallBanner').style.display = 'none';
+        }
+
+        function openResetModal() {
+            document.getElementById('resetModal').classList.remove('opacity-0', 'pointer-events-none');
+        }
+        function closeResetModal() {
+            document.getElementById('resetModal').classList.add('opacity-0', 'pointer-events-none');
+        }
+        function confirmReset() {
+            initDefaultData();
+            renderHoles();
+            closeResetModal();
+        }
+
+        if ('serviceWorker' in navigator) {
+            const swCode = `
+                const CACHE_NAME = 'turf-log-pwa-v1';
+                self.addEventListener('install', (e) => {
+                    e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(['./'])));
+                });
+                self.addEventListener('fetch', (e) => {
+                    e.respondWith(caches.match(e.request).then(response => response || fetch(e.request)));
+                });
+            `;
+            const blob = new Blob([swCode], { type: 'text/javascript' });
+            const swUrl = URL.createObjectURL(blob);
+            navigator.serviceWorker.register(swUrl).catch(() => {});
+        }
+
+        // Initialization
+        window.onload = function() {
+            loadData();
+        };
+    </script>
+</body>
+</html>
